@@ -6,21 +6,22 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 import sys
-from flask_talisman import Talisman
-from flask_cors import CORS
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+# Temporarily comment out security dependencies for debugging
+# from flask_talisman import Talisman
+# from flask_cors import CORS
+# from flask_limiter import Limiter
+# from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
 
-# Set up rate limiting
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://",
-    storage_options={"expire": 3600}  # Expire keys after 1 hour to prevent memory growth
-)
+# Temporarily disable rate limiting for debugging
+# limiter = Limiter(
+#     get_remote_address,
+#     app=app,
+#     default_limits=["200 per day", "50 per hour"],
+#     storage_uri="memory://",
+#     storage_options={"expire": 3600}  # Expire keys after 1 hour to prevent memory growth
+# )
 
 # Configure app for production
 if os.environ.get('FLASK_ENV') == 'production':
@@ -32,27 +33,29 @@ if os.environ.get('FLASK_ENV') == 'production':
         REMEMBER_COOKIE_HTTPONLY=True
     )
     
-    # Set up Content Security Policy
-    csp = {
-        'default-src': '\'self\'',
-        'style-src': ['\'self\'', 'https://cdn.jsdelivr.net'],
-        'script-src': ['\'self\'', 'https://cdn.jsdelivr.net'],
-        'img-src': ['\'self\'', 'data:'],
-        'font-src': ['\'self\'', 'https://cdn.jsdelivr.net']
-    }
+    # Temporarily disable security features for debugging
+    # csp = {
+    #     'default-src': '\'self\'',
+    #     'style-src': ['\'self\'', 'https://cdn.jsdelivr.net'],
+    #     'script-src': ['\'self\'', 'https://cdn.jsdelivr.net'],
+    #     'img-src': ['\'self\'', 'data:'],
+    #     'font-src': ['\'self\'', 'https://cdn.jsdelivr.net']
+    # }
     
-    # Initialize Talisman for security headers including CSP
-    # Use environment variable to control HTTPS enforcement
-    # This allows local testing without HTTPS while enforcing it in production
-    force_https = os.environ.get('FORCE_HTTPS', 'false').lower() == 'true'
-    Talisman(app, content_security_policy=csp, force_https=force_https)
+    # # Initialize Talisman for security headers including CSP
+    # # Use environment variable to control HTTPS enforcement
+    # # This allows local testing without HTTPS while enforcing it in production
+    # force_https = os.environ.get('FORCE_HTTPS', 'false').lower() == 'true'
+    # Talisman(app, content_security_policy=csp, force_https=force_https)
     
-    # Configure CORS - in production, only allow specific domains if needed
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    # # Configure CORS - in production, only allow specific domains if needed
+    # CORS(app, resources={r"/*": {"origins": "*"}})
+    pass
 else:
     # Development environment - less strict settings
-    Talisman(app, force_https=False, content_security_policy=None)
-    CORS(app)
+    # Talisman(app, force_https=False, content_security_policy=None)
+    # CORS(app)
+    pass
 
 class MortgageCalculator:
     """Comprehensive mortgage payment calculator"""
@@ -212,7 +215,7 @@ def favicon():
                                'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route('/calculate', methods=['POST'])
-@limiter.limit("20 per minute")
+# @limiter.limit("20 per minute")
 def calculate():
     try:
         app.logger.info(f"Calculate request from {request.remote_addr}")
