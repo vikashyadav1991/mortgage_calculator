@@ -296,6 +296,11 @@ def setup_logging(app):
 # Set up logging
 setup_logging(app)
 
+# Add startup logging
+app.logger.info(f"Flask app initialized. Environment: {os.environ.get('FLASK_ENV', 'development')}")
+app.logger.info(f"App name: {app.name}")
+app.logger.info(f"App instance path: {app.instance_path}")
+
 if __name__ == '__main__':
     debug_mode = os.environ.get('FLASK_ENV') != 'production'
     port = int(os.environ.get('PORT', 5000))
