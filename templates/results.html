@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mortgage Calculator Results</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="mb-0">Mortgage Payoff Summary</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <tbody>
+                                    <tr>
+                                        <th>Original Balance</th>
+                                        <td>${{ "{:,.2f}".format(results['original_balance']) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Payoff Date</th>
+                                        <td>{{ results['payoff_date'] }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Years to Payoff</th>
+                                        <td>{{ "{:.1f}".format(results['years_to_payoff']) }} years</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Payments</th>
+                                        <td>{{ results['total_payments'] }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Amount Paid</th>
+                                        <td>${{ "{:,.2f}".format(results['total_amount_paid']) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Interest Paid</th>
+                                        <td>${{ "{:,.2f}".format(results['total_interest_paid']) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Interest as % of Principal</th>
+                                        <td>{{ "{:.1f}".format((results['total_interest_paid']/results['original_balance'])*100) }}%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">Full Amortization Schedule</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if results['payment_history']|selectattr('note', 'defined')|list|length > 0 %}
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle"></i> For better performance, only a sample of payments is shown for this long-term mortgage.
+                        </div>
+                        {% endif %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Payment #</th>
+                                        <th>Date</th>
+                                        <th>Regular Payment</th>
+                                        <th>Lump Sum</th>
+                                        <th>Interest</th>
+                                        <th>Principal</th>
+                                        <th>Remaining Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in results['payment_history'] %}
+                                    <tr {% if 'note' in payment %}class="table-info"{% endif %}>
+                                        <td>{{ payment['payment_number'] }}</td>
+                                        <td>{{ payment['date'] }}</td>
+                                        <td>${{ "{:,.2f}".format(payment['regular_payment']) }}</td>
+                                        <td>{% if payment['lump_sum'] > 0 %}${{ "{:,.2f}".format(payment['lump_sum']) }}{% else %}-{% endif %}</td>
+                                        <td>${{ "{:,.2f}".format(payment['interest']) }}</td>
+                                        <td>${{ "{:,.2f}".format(payment['principal']) }}</td>
+                                        <td>${{ "{:,.2f}".format(payment['balance']) }}</td>
+                                    </tr>
+                                    {% if 'note' in payment %}
+                                    <tr class="table-light">
+                                        <td colspan="7" class="text-center text-muted small"><em>{{ payment['note'] }}</em></td>
+                                    </tr>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <a href="/" class="btn btn-primary">Calculate Another Mortgage</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
