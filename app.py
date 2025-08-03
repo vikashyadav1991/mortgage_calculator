@@ -62,7 +62,7 @@ else:
     CORS(app)
 
 class MortgageCalculator:
-    """Comprehensive mortgage payment calculator"""
+    """Comprehensive mortgage payoff date calculator"""
     def __init__(self):
         self.payment_frequencies = {
             'monthly': 12,
@@ -331,7 +331,7 @@ def setup_logging(app):
         app.logger.addHandler(stream_handler)
         
         app.logger.setLevel(logging.INFO)
-        app.logger.info('Mortgage Calculator startup')
+        app.logger.info('Mortgage Payoff Date Calculator startup')
     else:
         # In development, just log to console
         app.logger.setLevel(logging.DEBUG)
