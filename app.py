@@ -47,8 +47,15 @@ if os.environ.get('FLASK_ENV') == 'production':
     force_https = os.environ.get('FORCE_HTTPS', 'false').lower() == 'true'
     Talisman(app, content_security_policy=csp, force_https=force_https)
     
-    # Configure CORS - in production, only allow specific domains if needed
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    # Configure CORS - allow requests from browsers but be more restrictive than wildcard
+    # This allows the site to be accessed by anyone via browser while preventing malicious cross-origin requests
+    CORS(app, resources={
+        r"/*": {
+            "origins": ["https://mortgage-calculator-35wi.onrender.com", "https://*.onrender.com"],
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["Content-Type"]
+        }
+    })
 else:
     # Development environment - less strict settings
     Talisman(app, force_https=False, content_security_policy=None)
@@ -218,6 +225,12 @@ def calculate():
         app.logger.info(f"Calculate request from {request.remote_addr}")
         data = request.form
         
+        # Input validation constants
+        MAX_MORTGAGE_AMOUNT = 50_000_000  # $50M reasonable upper limit
+        MAX_INTEREST_RATE = 30.0  # 30% maximum interest rate
+        MAX_PAYMENT = 1_000_000  # $1M maximum payment
+        MAX_LUMP_SUM = 10_000_000  # $10M maximum lump sum
+        
         balance = float(data.get('balance', 0))
         annual_rate = float(data.get('interest_rate', 0)) / 100
         regular_payment = float(data.get('payment', 0))
@@ -225,18 +238,43 @@ def calculate():
         lump_sum = float(data.get('lump_sum', 0))
         lump_sum_month = int(data.get('lump_sum_month', 1))
         
+        # Enhanced input validation
         if balance <= 0:
             return render_template('error.html', 
                                   error_title='Invalid Input', 
                                   error_message='Mortgage balance must be positive')
+        if balance > MAX_MORTGAGE_AMOUNT:
+            return render_template('error.html', 
+                                  error_title='Invalid Input', 
+                                  error_message=f'Mortgage amount exceeds maximum allowed (${MAX_MORTGAGE_AMOUNT:,.2f})')
         if annual_rate < 0:
             return render_template('error.html', 
                                   error_title='Invalid Input', 
                                   error_message='Interest rate cannot be negative')
+        if annual_rate > MAX_INTEREST_RATE / 100:
+            return render_template('error.html', 
+                                  error_title='Invalid Input', 
+                                  error_message=f'Interest rate exceeds maximum allowed ({MAX_INTEREST_RATE}%)')
         if regular_payment <= 0:
             return render_template('error.html', 
                                   error_title='Invalid Input', 
                                   error_message='Regular payment must be positive')
+        if regular_payment > MAX_PAYMENT:
+            return render_template('error.html', 
+                                  error_title='Invalid Input', 
+                                  error_message=f'Payment amount exceeds maximum allowed (${MAX_PAYMENT:,.2f})')
+        if lump_sum < 0:
+            return render_template('error.html', 
+                                  error_title='Invalid Input', 
+                                  error_message='Lump sum payment cannot be negative')
+        if lump_sum > MAX_LUMP_SUM:
+            return render_template('error.html', 
+                                  error_title='Invalid Input', 
+                                  error_message=f'Lump sum exceeds maximum allowed (${MAX_LUMP_SUM:,.2f})')
+        if lump_sum_month < 1 or lump_sum_month > 12:
+            return render_template('error.html', 
+                                  error_title='Invalid Input', 
+                                  error_message='Lump sum month must be between 1 and 12')
         
         results = mortgage_calc.calculate_payment_schedule(
             balance=balance, 
@@ -256,11 +294,16 @@ def calculate():
         
         return render_template('results.html', results=results)
     
+    except ValueError as e:
+        app.logger.error(f"Input validation error in calculate: {str(e)}")
+        return render_template('error.html', 
+                              error_title='Invalid Input', 
+                              error_message='Please check your input values and try again.')
     except Exception as e:
         app.logger.error(f"Error in calculate: {str(e)}")
         return render_template('error.html', 
-                              error_title='Unexpected Error', 
-                              error_message=f'An unexpected error occurred: {str(e)}')
+                              error_title='System Error', 
+                              error_message='A system error occurred. Please try again.')
 
 @app.errorhandler(404)
 def page_not_found(e):
